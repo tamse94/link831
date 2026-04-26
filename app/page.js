@@ -1,82 +1,74 @@
 "use client";
 
-import { useEffect, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 function RedirectHandler() {
   const searchParams = useSearchParams();
   const targetUrl = searchParams.get('q');
+  const [isFb, setIsFb] = useState(false);
 
   useEffect(() => {
     if (!targetUrl) return;
 
-    // Bersihkan URL dari http/https untuk format intent
-    const cleanUrl = targetUrl.replace(/^https?:\/\//, '');
-    const intentUrl = `intent://${cleanUrl}#Intent;scheme=https;package=com.android.chrome;end`;
-    
-    // Pastikan URL normal punya awalan https://
-    const normalUrl = targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`;
-
-    // Deteksi Facebook dari User Agent di browser
+    // Deteksi Facebook
     const ua = navigator.userAgent || navigator.vendor || window.opera;
     const isFacebook = ua.includes('FBAN') || ua.includes('FBAV');
 
     if (isFacebook) {
-      // JIKA FB: Jalankan intent via JavaScript secara paksa
-      window.location.href = intentUrl;
+      // Jika dari FB, tampilkan layar petunjuk
+      setIsFb(true);
     } else {
-      // JIKA BUKAN FB: Arahkan ke link normal
+      // Jika sudah di Chrome/browser luar, langsung jalankan link offer!
+      const normalUrl = targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`;
       window.location.replace(normalUrl);
     }
   }, [targetUrl]);
 
-  // Jika tidak ada parameter ?q=
   if (!targetUrl) {
     return (
       <div style={{ textAlign: 'center', marginTop: '100px', fontFamily: 'sans-serif' }}>
-        <h2>Sistem Redirect Aktif 🚀</h2>
-        <p>Cara penggunaan: <code>/?q=https://link-offer.com</code></p>
+        <h2>Sistem Siap 🚀</h2>
+        <p>Gunakan format: <code>/?q=tes.com</code></p>
       </div>
     );
   }
 
-  // Tampilan sebentar saat di dalam Facebook + Tombol Cadangan
-  const cleanUrl = targetUrl.replace(/^https?:\/\//, '');
-  const intentFallback = `intent://${cleanUrl}#Intent;scheme=https;package=com.android.chrome;end`;
+  // TAMPILAN JIKA DIBUKA DI DALAM FACEBOOK
+  if (isFb) {
+    return (
+      <div style={{ 
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.9)', // Latar belakang gelap agar fokus
+        color: 'white',
+        fontFamily: 'sans-serif',
+        zIndex: 9999,
+        padding: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center'
+      }}>
+        {/* Panah menunjuk ke pojok kanan atas (menu FB) */}
+        <div style={{ position: 'absolute', top: '10px', right: '20px', fontSize: '50px', transform: 'rotate(-45deg)' }}>
+          ↗️
+        </div>
+        
+        <div style={{ marginTop: '120px', textAlign: 'center', maxWidth: '300px' }}>
+          <h2 style={{ color: '#ff4757', marginBottom: '10px' }}>Tindakan Diperlukan!</h2>
+          <p style={{ fontSize: '18px', lineHeight: '1.5' }}>
+            Untuk melihat halaman ini dengan aman, ikuti langkah berikut:
+          </p>
+          <div style={{ background: '#333', padding: '15px', borderRadius: '8px', textAlign: 'left', marginTop: '20px' }}>
+            <p>1. Klik ikon <b>titik tiga</b> di pojok kanan atas.</p>
+            <p>2. Pilih menu <b>"Buka di Chrome"</b> atau <b>"Buka di Browser Sistem"</b>.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column',
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      height: '100vh', 
-      fontFamily: 'sans-serif',
-      backgroundColor: '#f8f9fa',
-      padding: '20px',
-      textAlign: 'center'
-    }}>
-      <h3 style={{ color: '#333' }}>Membuka di luar Facebook...</h3>
-      <p style={{ color: '#666', marginBottom: '30px' }}>
-        Jika halaman tidak terbuka otomatis, silakan klik tombol di bawah ini:
-      </p>
-      <a 
-        href={intentFallback} 
-        style={{
-          padding: '15px 30px', 
-          backgroundColor: '#007bff', 
-          color: '#fff', 
-          textDecoration: 'none', 
-          borderRadius: '8px',
-          fontWeight: 'bold',
-          fontSize: '16px',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-        }}
-      >
-        Buka di Google Chrome
-      </a>
-    </div>
-  );
+  // Layar loading sebentar
+  return <div style={{ textAlign: 'center', marginTop: '50px' }}>Memproses link...</div>;
 }
 
 export default function Home() {
